@@ -39,6 +39,7 @@
 .service-card p, .catalog-card p, .listing-card p, .publication-card p { margin-bottom: 18px; color: var(--muted); font-size: 14px; }
 .service-card .card-link { margin-top: auto; color: var(--blue); font-size: 13px; font-weight: 750; }
 .service-card .card-link:hover, .department-footer-links a:hover { color: var(--navy); }
+.department-pages .primary-nav a[aria-current="page"] { color: var(--blue); }
 .info-panel { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 28px; margin-top: 30px; padding: clamp(24px, 4vw, 38px); }
 .info-panel h2 { margin-bottom: 10px; font-size: clamp(25px, 3vw, 34px); }
 .info-panel p { max-width: 750px; margin-bottom: 0; color: var(--muted); }
