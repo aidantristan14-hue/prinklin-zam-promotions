@@ -37,3 +37,22 @@ if (menuToggle && primaryNav) {
 
 const year = document.querySelector('#current-year');
 if (year) year.textContent = String(new Date().getFullYear());
+
+// Turn the existing homepage department anchors into links to the new pages,
+// while keeping the original homepage sections and all existing interactions.
+const departmentPages = {
+  technology: 'technology.html',
+  'digital-services': 'digital-services.html',
+  'crypto-finance': 'crypto-finance.html',
+  'real-estate': 'real-estate.html',
+  gadgets: 'gadgets.html',
+  publications: 'publications.html'
+};
+
+Object.entries(departmentPages).forEach(([sectionId, page]) => {
+  document.querySelectorAll(`a[href="#${sectionId}"]`).forEach((link) => {
+    link.setAttribute('href', page);
+  });
+  const cardLink = document.querySelector(`#${sectionId} .card-link`);
+  if (cardLink) cardLink.setAttribute('href', page);
+});
