@@ -1,11 +1,10 @@
--- Replace change_request_status with authenticated-actor authorization and
--- explicit transitions among the existing request_status values.
+-- Replace change_request_status with authenticated-actor authorization.
 -- Review-only migration: do not apply to production without approval.
 
 begin;
 
 -- Remove the insecure signature that accepted a caller-supplied actor UUID.
--- Branch inspection found no tracked application callers of this function.
+-- No callers are present in the tracked migrations or application files on this branch.
 drop function if exists public.change_request_status(uuid, public.request_status, uuid);
 
 drop function if exists public.change_request_status(uuid, public.request_status);
@@ -23,7 +22,6 @@ declare
   v_actor_id uuid := auth.uid();
   v_department_id uuid;
   v_current_status public.request_status;
-  v_allowed_transition boolean := false;
 begin
   if v_actor_id is null then
     raise exception 'Authentication required';
@@ -48,44 +46,8 @@ begin
     raise exception 'User is not authorized to change this request status';
   end if;
 
-  -- Preserve the existing status enum. Allowed transitions follow the lifecycle:
-  -- new -> reviewing/cancelled; reviewing -> awaiting_customer/in_progress/
-  -- resolved/cancelled; awaiting_customer -> reviewing/in_progress/cancelled;
-  -- in_progress -> awaiting_customer/resolved/cancelled; resolved -> in_progress
-  -- (reopen) or closed; closed and cancelled are terminal.
-  v_allowed_transition := case v_current_status
-    when 'new'::public.request_status then
-      p_new_status in ('reviewing'::public.request_status, 'cancelled'::public.request_status)
-    when 'reviewing'::public.request_status then
-      p_new_status in (
-        'awaiting_customer'::public.request_status,
-        'in_progress'::public.request_status,
-        'resolved'::public.request_status,
-        'cancelled'::public.request_status
-      )
-    when 'awaiting_customer'::public.request_status then
-      p_new_status in (
-        'reviewing'::public.request_status,
-        'in_progress'::public.request_status,
-        'cancelled'::public.request_status
-      )
-    when 'in_progress'::public.request_status then
-      p_new_status in (
-        'awaiting_customer'::public.request_status,
-        'resolved'::public.request_status,
-        'cancelled'::public.request_status
-      )
-    when 'resolved'::public.request_status then
-      p_new_status in ('in_progress'::public.request_status, 'closed'::public.request_status)
-    when 'closed'::public.request_status then false
-    when 'cancelled'::public.request_status then false
-    else false
-  end;
-
-  if not coalesce(v_allowed_transition, false) then
-    raise exception 'Invalid request status transition: % -> %', v_current_status, p_new_status;
-  end if;
-
+  -- Preserve the existing lifecycle behavior: accept any value in the existing
+  -- request_status enum; a business-approved transition matrix is not yet available.
   update public.service_requests
   set status = p_new_status,
       updated_at = now(),
@@ -110,7 +72,7 @@ begin
     v_current_status,
     p_new_status,
     true,
-    format('Request status changed from %s to %s.', v_current_status, p_new_status)
+    'Request status updated by staff.'
   );
 end;
 $$;
